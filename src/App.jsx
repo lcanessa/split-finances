@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { ConfigGuard } from './components/ConfigGuard'
 import { AppProvider } from './context/AppProvider'
 import { AuthProvider } from './context/AuthProvider'
 import { useApp } from './hooks/useApp'
@@ -76,11 +77,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ConfigGuard>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ConfigGuard>
   )
 }
 

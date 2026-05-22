@@ -42,6 +42,19 @@ Completar en `.env`:
 npm run dev
 ```
 
+## Deploy en Netlify
+
+1. Conectar el repo de GitHub en Netlify.
+2. El archivo `netlify.toml` ya define:
+   - **Build command:** `npm run build`
+   - **Publish directory:** `dist`
+3. En **Site configuration → Environment variables** agregar:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. **Trigger deploy** después de guardar las variables.
+
+Sin `publish = dist`, el sitio queda en blanco porque se sirve el `index.html` de desarrollo (sin el JS compilado).
+
 ## Scripts
 
 | Comando | Descripción |
