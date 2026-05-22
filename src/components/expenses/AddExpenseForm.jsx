@@ -10,22 +10,61 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function buildInitialSplit(users) {
+function buildInitialSplit(users, participantIds = null) {
+  if (participantIds?.length) {
+    return Object.fromEntries(
+      users.map((user) => [user.id, participantIds.includes(user.id)]),
+    )
+  }
   return Object.fromEntries(users.map((user) => [user.id, true]))
 }
 
-export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel }) {
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState('food')
-  const [currency, setCurrency] = useState('ARS')
-  const [amountInput, setAmountInput] = useState('')
-  const [amountValue, setAmountValue] = useState(null)
+function mapExpenseToForm(expense, users) {
+  if (!expense) return null
+  return {
+    title: expense.description ?? '',
+    category: expense.category ?? 'other',
+    currency: expense.currency ?? 'ARS',
+    amount: Number(expense.amount),
+    paidByUserId: expense.paid_by_user_id ?? users[0]?.id ?? '',
+    date: expense.date ?? todayISO(),
+    splitFor: buildInitialSplit(users, expense.split_for ?? []),
+  }
+}
+
+function createFormState(editingExpense, users, defaultPaidByUserId) {
+  const mapped = mapExpenseToForm(editingExpense, users)
+  return {
+    title: mapped?.title ?? '',
+    category: mapped?.category ?? 'food',
+    currency: mapped?.currency ?? 'ARS',
+    amountInput: mapped?.amount ? formatAmountDisplay(mapped.amount) : '',
+    amountValue: mapped?.amount ?? null,
+    paidByUserId: mapped?.paidByUserId ?? defaultPaidByUserId ?? users[0]?.id ?? '',
+    date: mapped?.date ?? todayISO(),
+    splitFor: mapped?.splitFor ?? buildInitialSplit(users),
+  }
+}
+
+export function AddExpenseForm({
+  users,
+  defaultPaidByUserId,
+  editingExpense = null,
+  onSubmit,
+  onCancel,
+}) {
+  const isEditing = Boolean(editingExpense?.id)
+  const initial = createFormState(editingExpense, users, defaultPaidByUserId)
+
+  const [title, setTitle] = useState(initial.title)
+  const [category, setCategory] = useState(initial.category)
+  const [currency, setCurrency] = useState(initial.currency)
+  const [amountInput, setAmountInput] = useState(initial.amountInput)
+  const [amountValue, setAmountValue] = useState(initial.amountValue)
   const [amountError, setAmountError] = useState(null)
-  const [paidByUserId, setPaidByUserId] = useState(
-    defaultPaidByUserId ?? users[0]?.id ?? '',
-  )
-  const [date, setDate] = useState(todayISO())
-  const [splitFor, setSplitFor] = useState(() => buildInitialSplit(users))
+  const [paidByUserId, setPaidByUserId] = useState(initial.paidByUserId)
+  const [date, setDate] = useState(initial.date)
+  const [splitFor, setSplitFor] = useState(initial.splitFor)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState(null)
 
@@ -69,6 +108,19 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
       if (checkedCount === 0) return prev
       return next
     })
+  }
+
+  function resetCreateForm() {
+    setTitle('')
+    setCategory('food')
+    setCurrency('ARS')
+    setAmountInput('')
+    setAmountValue(null)
+    setPaidByUserId(defaultPaidByUserId ?? users[0]?.id ?? '')
+    setDate(todayISO())
+    setSplitFor(buildInitialSplit(users))
+    setAmountError(null)
+    setFormError(null)
   }
 
   async function handleSubmit(event) {
@@ -122,14 +174,9 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         date,
         split_for: participantIds,
       })
-      setTitle('')
-      setCategory('food')
-      setCurrency('ARS')
-      setAmountInput('')
-      setAmountValue(null)
-      setDate(todayISO())
-      setSplitFor(buildInitialSplit(users))
-      setAmountError(null)
+      if (!isEditing) {
+        resetCreateForm()
+      }
     } catch (err) {
       setFormError(err.message ?? 'No se pudo guardar el gasto')
     } finally {
@@ -139,7 +186,10 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Título */}
+      {isEditing && (
+        <p className="text-sm font-medium text-indigo-700">Editando gasto</p>
+      )}
+
       <Input
         id="expense-title"
         label="Título"
@@ -149,7 +199,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         className="text-base"
       />
 
-      {/* Categorías */}
       <div className="space-y-2">
         <p className="text-sm font-medium text-slate-700">Categoría</p>
         <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -174,7 +223,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         </div>
       </div>
 
-      {/* Importe + moneda */}
       <div className="space-y-2">
         <p className="text-sm font-medium text-slate-700">Importe</p>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -220,7 +268,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         </div>
       </div>
 
-      {/* Pagado por */}
       <div className="space-y-2">
         <p className="text-sm font-medium text-slate-700">Pagado por</p>
         <div className="grid grid-cols-2 gap-2">
@@ -251,7 +298,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         </div>
       </div>
 
-      {/* Fecha */}
       <div className="space-y-2">
         <label htmlFor="expense-date" className="text-sm font-medium text-slate-700">
           Fecha
@@ -268,7 +314,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         </div>
       </div>
 
-      {/* División / Para quién */}
       <div className="space-y-2">
         <p className="text-sm font-medium text-slate-700">Para quién</p>
         <p className="text-xs text-slate-500">
@@ -311,7 +356,6 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
       )}
 
-      {/* Acciones sticky en móvil */}
       <div className="sticky bottom-20 z-10 -mx-1 flex gap-2 bg-slate-50/95 py-2 backdrop-blur md:static md:bottom-auto md:bg-transparent md:py-0">
         {onCancel && (
           <Button type="button" variant="secondary" className="flex-1" onClick={onCancel}>
@@ -324,6 +368,8 @@ export function AddExpenseForm({ users, defaultPaidByUserId, onSubmit, onCancel 
               <Loader2 className="h-4 w-4 animate-spin" />
               Guardando...
             </>
+          ) : isEditing ? (
+            'Guardar cambios'
           ) : (
             'Agregar gasto'
           )}

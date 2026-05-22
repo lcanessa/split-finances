@@ -1,6 +1,8 @@
+import { Pencil, Trash2 } from 'lucide-react'
 import { EXPENSE_CATEGORIES, CURRENCIES } from '../../lib/expenseCategories'
 import { formatAmountDisplay } from '../../lib/safeMathEval'
 import { Card } from '../ui/Card'
+import { Button } from '../ui/Button'
 
 function getCategoryIcon(categoryId) {
   const cat = EXPENSE_CATEGORIES.find((c) => c.id === categoryId)
@@ -11,9 +13,17 @@ function getCurrencySymbol(code) {
   return CURRENCIES.find((c) => c.code === code)?.symbol ?? '$'
 }
 
-export function ExpenseList({ expenses, users, loading }) {
+export function ExpenseList({
+  expenses,
+  users,
+  loading,
+  editingId,
+  deletingId,
+  onEdit,
+  onDelete,
+}) {
   if (loading) {
-    return <p className="text-center text-sm text-slate-500 py-8">Cargando gastos...</p>
+    return <p className="py-8 text-center text-sm text-slate-500">Cargando gastos...</p>
   }
 
   if (expenses.length === 0) {
@@ -33,10 +43,16 @@ export function ExpenseList({ expenses, users, loading }) {
         const payer = usersById[expense.paid_by_user_id]
         const symbol = getCurrencySymbol(expense.currency)
         const splitCount = expense.split_for?.length ?? 0
+        const isEditing = editingId === expense.id
+        const isDeleting = deletingId === expense.id
 
         return (
           <li key={expense.id}>
-            <Card className="flex items-center gap-3 py-4">
+            <Card
+              className={`flex items-center gap-3 py-4 transition-colors ${
+                isEditing ? 'border-indigo-300 ring-2 ring-indigo-100' : ''
+              }`}
+            >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                 <Icon className="h-5 w-5" />
               </div>
@@ -55,6 +71,30 @@ export function ExpenseList({ expenses, users, loading }) {
               <p className="shrink-0 text-sm font-semibold text-slate-900">
                 {symbol} {formatAmountDisplay(Number(expense.amount))}
               </p>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(expense)}
+                  disabled={isDeleting}
+                  aria-label="Editar gasto"
+                  className="px-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(expense)}
+                  disabled={isDeleting}
+                  aria-label="Eliminar gasto"
+                  className="px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </Card>
           </li>
         )

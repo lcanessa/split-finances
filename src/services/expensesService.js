@@ -14,23 +14,33 @@ export async function fetchDailyExpenses({ limit = 50 } = {}) {
   return data ?? []
 }
 
+const EXPENSE_FIELDS =
+  'id, date, description, amount, category, currency, split_for, paid_by_user_id, created_at'
+
 export async function createDailyExpense(expense) {
   const { data, error } = await supabase
     .from('daily_expenses')
     .insert(expense)
-    .select(`
-      id,
-      date,
-      description,
-      amount,
-      category,
-      currency,
-      split_for,
-      paid_by_user_id,
-      created_at
-    `)
+    .select(EXPENSE_FIELDS)
     .single()
 
   if (error) throw error
   return data
+}
+
+export async function updateDailyExpense(id, expense) {
+  const { data, error } = await supabase
+    .from('daily_expenses')
+    .update(expense)
+    .eq('id', id)
+    .select(EXPENSE_FIELDS)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteDailyExpense(id) {
+  const { error } = await supabase.from('daily_expenses').delete().eq('id', id)
+  if (error) throw error
 }
