@@ -1,8 +1,8 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { EXPENSE_CATEGORIES, CURRENCIES } from '../../lib/expenseCategories'
+import { groupExpensesByDate } from '../../lib/expenseDates'
 import { formatAmountDisplay } from '../../lib/safeMathEval'
 import { Card } from '../ui/Card'
-import { Button } from '../ui/Button'
 
 function getCategoryIcon(categoryId) {
   const cat = EXPENSE_CATEGORIES.find((c) => c.id === categoryId)
@@ -13,15 +13,7 @@ function getCurrencySymbol(code) {
   return CURRENCIES.find((c) => c.code === code)?.symbol ?? '$'
 }
 
-export function ExpenseList({
-  expenses,
-  users,
-  loading,
-  editingId,
-  deletingId,
-  onEdit,
-  onDelete,
-}) {
+export function ExpenseList({ expenses, users, loading, onSelect }) {
   if (loading) {
     return <p className="py-8 text-center text-sm text-slate-500">Cargando gastos...</p>
   }
@@ -35,70 +27,55 @@ export function ExpenseList({
   }
 
   const usersById = Object.fromEntries(users.map((u) => [u.id, u]))
+  const groups = groupExpensesByDate(expenses)
 
   return (
-    <ul className="space-y-2">
-      {expenses.map((expense) => {
-        const Icon = getCategoryIcon(expense.category)
-        const payer = usersById[expense.paid_by_user_id]
-        const symbol = getCurrencySymbol(expense.currency)
-        const splitCount = expense.split_for?.length ?? 0
-        const isEditing = editingId === expense.id
-        const isDeleting = deletingId === expense.id
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <section key={group.date}>
+          <h3 className="mb-2 text-sm font-semibold capitalize text-slate-700">
+            {group.label}
+          </h3>
+          <ul className="space-y-2">
+            {group.expenses.map((expense) => {
+              const Icon = getCategoryIcon(expense.category)
+              const payer = usersById[expense.paid_by_user_id]
+              const symbol = getCurrencySymbol(expense.currency)
+              const splitCount = expense.split_for?.length ?? 0
 
-        return (
-          <li key={expense.id}>
-            <Card
-              className={`flex items-center gap-3 py-4 transition-colors ${
-                isEditing ? 'border-indigo-300 ring-2 ring-indigo-100' : ''
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-900">{expense.description}</p>
-                <p className="text-xs text-slate-500">
-                  {payer?.name?.split(' ')[0] ?? '—'} pagó ·{' '}
-                  {new Date(expense.date + 'T12:00:00').toLocaleDateString('es-AR', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                  {splitCount === 1 && ' · 100% personal'}
-                  {splitCount > 1 && ' · dividido'}
-                </p>
-              </div>
-              <p className="shrink-0 text-sm font-semibold text-slate-900">
-                {symbol} {formatAmountDisplay(Number(expense.amount))}
-              </p>
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(expense)}
-                  disabled={isDeleting}
-                  aria-label="Editar gasto"
-                  className="px-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(expense)}
-                  disabled={isDeleting}
-                  aria-label="Eliminar gasto"
-                  className="px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          </li>
-        )
-      })}
-    </ul>
+              return (
+                <li key={expense.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(expense)}
+                    className="w-full text-left transition-transform active:scale-[0.99]"
+                  >
+                    <Card className="flex items-center gap-3 py-4 hover:border-indigo-200 hover:shadow-md">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-slate-900">
+                          {expense.description}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {payer?.name?.split(' ')[0] ?? '—'} pagó
+                          {splitCount === 1 && ' · personal'}
+                          {splitCount > 1 && ' · dividido'}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold text-slate-900">
+                        {symbol} {formatAmountDisplay(Number(expense.amount))}
+                      </p>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+                    </Card>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
   )
 }

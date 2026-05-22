@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { AddExpenseForm } from '../../components/expenses/AddExpenseForm'
+import { ExpenseBalance } from '../../components/expenses/ExpenseBalance'
+import { ExpenseDetail } from '../../components/expenses/ExpenseDetail'
 import { ExpenseList } from '../../components/expenses/ExpenseList'
 import { PageWrapper } from '../../components/layout/PageWrapper'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Tabs } from '../../components/ui/Tabs'
 import { useApp } from '../../hooks/useApp'
 import {
   createDailyExpense,
@@ -13,13 +16,20 @@ import {
   updateDailyExpense,
 } from '../../services/expensesService'
 
+const TABS = [
+  { id: 'list', label: 'Gastos' },
+  { id: 'balance', label: 'Balance' },
+]
+
 export function Expenses() {
   const { users, activeUser } = useApp()
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState(null)
+  const [activeTab, setActiveTab] = useState('list')
   const [showNewForm, setShowNewForm] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
+  const [selectedExpense, setSelectedExpense] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
   const loadExpenses = useCallback(async () => {
@@ -28,6 +38,9 @@ export function Expenses() {
     try {
       const data = await fetchDailyExpenses()
       setExpenses(data)
+      setSelectedExpense((prev) =>
+        prev ? data.find((e) => e.id === prev.id) ?? null : null,
+      )
     } catch (err) {
       setListError(err.message ?? 'No se pudieron cargar los gastos')
     } finally {
@@ -65,13 +78,25 @@ export function Expenses() {
   }
 
   function handleStartNew() {
+    setSelectedExpense(null)
     setEditingExpense(null)
     setShowNewForm(true)
+    setActiveTab('list')
   }
 
-  function handleEdit(expense) {
+  function handleSelect(expense) {
+    setSelectedExpense(expense)
     setShowNewForm(false)
-    setEditingExpense(expense)
+    setEditingExpense(null)
+  }
+
+  function handleBackFromDetail() {
+    setSelectedExpense(null)
+  }
+
+  function handleEditFromDetail() {
+    setEditingExpense(selectedExpense)
+    setSelectedExpense(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -82,7 +107,8 @@ export function Expenses() {
   }
 
   async function handleUpdateExpense(expense) {
-    await updateDailyExpense(editingExpense.id, expense)
+    const id = editingExpense.id
+    await updateDailyExpense(id, expense)
     await loadExpenses()
     setEditingExpense(null)
   }
@@ -96,9 +122,8 @@ export function Expenses() {
     setDeletingId(expense.id)
     try {
       await deleteDailyExpense(expense.id)
-      if (editingExpense?.id === expense.id) {
-        setEditingExpense(null)
-      }
+      if (selectedExpense?.id === expense.id) setSelectedExpense(null)
+      if (editingExpense?.id === expense.id) setEditingExpense(null)
       await loadExpenses()
     } catch (err) {
       setListError(err.message ?? 'No se pudo eliminar el gasto')
@@ -108,26 +133,42 @@ export function Expenses() {
   }
 
   const formVisible = showNewForm || editingExpense
+  const showDetail = selectedExpense && !formVisible
+
+  const headerAction =
+    activeTab === 'list' && !showDetail ? (
+      !formVisible ? (
+        <Button size="sm" onClick={handleStartNew}>
+          <Plus className="h-4 w-4" />
+          Nuevo
+        </Button>
+      ) : (
+        <Button size="sm" variant="ghost" onClick={closeForm}>
+          <X className="h-4 w-4" />
+          Cerrar
+        </Button>
+      )
+    ) : null
 
   return (
     <PageWrapper
       title="Gastos"
-      description="Gastos diarios compartidos."
-      action={
-        !formVisible ? (
-          <Button size="sm" onClick={handleStartNew}>
-            <Plus className="h-4 w-4" />
-            Nuevo
-          </Button>
-        ) : (
-          <Button size="sm" variant="ghost" onClick={closeForm}>
-            <X className="h-4 w-4" />
-            Cerrar
-          </Button>
-        )
-      }
+      description="Gastos diarios y balance en pareja."
+      action={headerAction}
     >
-      {formVisible && (
+      {!showDetail && (
+        <Tabs
+          tabs={TABS}
+          activeId={activeTab}
+          onChange={(id) => {
+            setActiveTab(id)
+            setSelectedExpense(null)
+            closeForm()
+          }}
+        />
+      )}
+
+      {formVisible && activeTab === 'list' && (
         <Card className="p-4 sm:p-6">
           <AddExpenseForm
             key={editingExpense?.id ?? 'new'}
@@ -140,42 +181,45 @@ export function Expenses() {
         </Card>
       )}
 
-      {!formVisible && (
-        <button
-          type="button"
-          onClick={handleStartNew}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 py-3 text-sm font-medium text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 md:hidden"
-        >
-          <Plus className="h-5 w-5" />
-          Agregar gasto
-        </button>
+      {listError && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {listError}
+        </p>
       )}
 
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700">
-          Todos los gastos ({loading ? '…' : expenses.length})
-        </h2>
-        {listError && (
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            {listError}
-            {listError.includes('column') && (
-              <span className="mt-1 block text-xs">
-                Ejecutá la migración en{' '}
-                <code>supabase/migrations/add_daily_expense_fields.sql</code>
-              </span>
-            )}
-          </p>
-        )}
-        <ExpenseList
-          expenses={expenses}
+      {activeTab === 'list' && !formVisible && showDetail && (
+        <ExpenseDetail
+          expense={selectedExpense}
           users={users}
-          loading={loading}
-          editingId={editingExpense?.id}
-          deletingId={deletingId}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onBack={handleBackFromDetail}
+          onEdit={handleEditFromDetail}
+          onDelete={() => handleDelete(selectedExpense)}
+          deleting={deletingId === selectedExpense.id}
         />
-      </div>
+      )}
+
+      {activeTab === 'list' && !formVisible && !showDetail && (
+        <>
+          <button
+            type="button"
+            onClick={handleStartNew}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 py-3 text-sm font-medium text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50 md:hidden"
+          >
+            <Plus className="h-5 w-5" />
+            Agregar gasto
+          </button>
+          <ExpenseList
+            expenses={expenses}
+            users={users}
+            loading={loading}
+            onSelect={handleSelect}
+          />
+        </>
+      )}
+
+      {activeTab === 'balance' && (
+        <ExpenseBalance expenses={expenses} users={users} loading={loading} />
+      )}
     </PageWrapper>
   )
 }
