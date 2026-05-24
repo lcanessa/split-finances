@@ -1,4 +1,5 @@
-import { LogOut, UserRound, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { LogOut, Settings, UserRound, Wallet } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
 import { useAuth } from '../../hooks/useAuth'
 import { getInitials } from '../../lib/utils'
@@ -33,6 +34,14 @@ export function Header() {
               <p className="text-xs text-slate-500">Perfil activo</p>
             </div>
           </div>
+
+          <Link
+            to="/configuracion"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+            title="Configuración"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
 
           <Button variant="ghost" size="sm" onClick={clearActiveUser} title="Cambiar perfil de la pareja">
             <UserRound className="h-4 w-4" />

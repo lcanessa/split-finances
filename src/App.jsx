@@ -4,11 +4,12 @@ import { AppProvider } from './context/AppProvider'
 import { AuthProvider } from './context/AuthProvider'
 import { useApp } from './hooks/useApp'
 import { useAuth } from './hooks/useAuth'
-import { AppLayout } from './components/layout/AppLayout'
+import { MainLayout } from './components/layout/MainLayout'
 import { Spinner } from './components/ui/Spinner'
 import { CreditPurchases } from './pages/CreditPurchases/CreditPurchases'
-import { Dashboard } from './pages/Dashboard/Dashboard'
+import { BalanceView } from './pages/Dashboard/BalanceView'
 import { Expenses } from './pages/Expenses/Expenses'
+import { FixedAndSalaries } from './pages/FixedAndSalaries/FixedAndSalaries'
 import { Login } from './pages/Login/Login'
 import { SelectUser } from './pages/SelectUser/SelectUser'
 import { SetupUsers } from './pages/SetupUsers/SetupUsers'
@@ -46,12 +47,16 @@ function AuthenticatedApp() {
 
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="gastos" element={<Expenses />} />
-        <Route path="creditos" element={<CreditPurchases />} />
+      <Route element={<MainLayout />}>
+        <Route index element={<Navigate to="/balance" replace />} />
+        <Route path="balance" element={<BalanceView />} />
+        <Route path="dia-a-dia" element={<Expenses />} />
+        <Route path="fijos-sueldos" element={<FixedAndSalaries />} />
+        <Route path="tarjetas" element={<CreditPurchases />} />
         <Route path="configuracion" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="gastos" element={<Navigate to="/dia-a-dia" replace />} />
+        <Route path="creditos" element={<Navigate to="/tarjetas" replace />} />
+        <Route path="*" element={<Navigate to="/balance" replace />} />
       </Route>
     </Routes>
   )

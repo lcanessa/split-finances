@@ -152,8 +152,8 @@ export function Expenses() {
 
   return (
     <PageWrapper
-      title="Gastos"
-      description="Gastos diarios y balance en pareja."
+      title="Día a Día"
+      description="Gastos cotidianos compartidos — como Tricount."
       action={headerAction}
     >
       {!showDetail && (
