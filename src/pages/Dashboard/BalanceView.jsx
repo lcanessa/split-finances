@@ -102,7 +102,7 @@ export function BalanceView() {
     if (!data || users.length < 2) return null
     return calculateMonthlyBalance({
       users,
-      monthlyBalance: data.monthlyBalance,
+      splitBalance: data.splitBalance,
       dailyExpenses: data.dailyExpenses,
       fixedExpenses: data.fixedExpenses,
       installments: data.installments,
@@ -227,9 +227,9 @@ export function BalanceView() {
             </Card>
           )}
 
-          {!data?.monthlyBalance && (
+          {!data?.splitBalance && (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              No hay sueldos cargados para este mes. Los gastos fijos se repartirán 50/50
+              No hay sueldos del mes anterior cargados. Los gastos fijos se repartirán 50/50
               hasta que cargues los ingresos en Fijos y Sueldos.
             </p>
           )}

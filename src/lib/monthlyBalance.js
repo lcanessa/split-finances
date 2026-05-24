@@ -1,4 +1,6 @@
-import { calculateSalaryPercentages } from './fixedExpenseSettlement'
+import { buildFixedExpenseDetailReport } from './fixedExpenseSettlement'
+
+import { resolveCoupleUsers } from './coupleUsers'
 
 function initUserMap(users, initial = 0) {
   return Object.fromEntries(users.map((u) => [u.id, initial]))
@@ -9,28 +11,11 @@ function initUserMap(users, initial = 0) {
  */
 export function calculateMonthlyBalance({
   users,
-  monthlyBalance,
+  splitBalance,
   dailyExpenses,
   fixedExpenses,
   installments,
 }) {
-  const userA = users[0]
-  const userB = users[1]
-
-  const salaryPercents = calculateSalaryPercentages(
-    monthlyBalance?.salary_user_a ?? 0,
-    monthlyBalance?.salary_user_b ?? 0,
-  )
-
-  const percentA =
-    salaryPercents.total > 0 ? salaryPercents.percentA : 50
-  const percentB =
-    salaryPercents.total > 0 ? salaryPercents.percentB : 50
-
-  const percentByUserId = userA && userB
-    ? { [userA.id]: percentA, [userB.id]: percentB }
-    : {}
-
   const paid = initUserMap(users, 0)
   const shouldPay = initUserMap(users, 0)
 
@@ -50,18 +35,19 @@ export function calculateMonthlyBalance({
     }
   }
 
-  let totalFixed = 0
-  for (const expense of fixedExpenses) {
-    const amount = Number(expense.amount)
-    totalFixed += amount
-    paid[expense.paid_by_user_id] =
-      (paid[expense.paid_by_user_id] ?? 0) + amount
-  }
+  const fixedReport = buildFixedExpenseDetailReport({
+    expenses: fixedExpenses,
+    users,
+    splitBalance,
+    incomeBalance: splitBalance,
+  })
+
   for (const user of users) {
-    shouldPay[user.id] =
-      (shouldPay[user.id] ?? 0) +
-      totalFixed * ((percentByUserId[user.id] ?? 0) / 100)
+    shouldPay[user.id] = (shouldPay[user.id] ?? 0) + (fixedReport.shouldPay[user.id] ?? 0)
+    paid[user.id] = (paid[user.id] ?? 0) + (fixedReport.paid[user.id] ?? 0)
   }
+
+  const totalFixed = fixedReport.total
 
   let totalCards = 0
   for (const installment of installments) {
@@ -92,7 +78,8 @@ export function calculateMonthlyBalance({
     paid,
     shouldPay,
     balance,
-    salaryPercents: percentByUserId,
+    salaryPercents: fixedReport.percentByUserId,
+    fixedReport,
   }
 }
 
@@ -101,7 +88,7 @@ export function getMonthlyVerdict(users, balance) {
     return { settled: true, message: 'Configurá dos usuarios para ver el balance.' }
   }
 
-  const [userA, userB] = users
+  const { userA, userB } = resolveCoupleUsers(users)
   const balA = balance[userA.id] ?? 0
   const balB = balance[userB.id] ?? 0
 

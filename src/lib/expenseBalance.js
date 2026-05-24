@@ -1,4 +1,5 @@
 import { formatAmountDisplay } from './safeMathEval'
+import { resolveCoupleUsers } from './coupleUsers'
 
 export function getFirstName(name) {
   return name?.split(' ')[0] ?? name
@@ -39,7 +40,7 @@ export function calculateBalances(expenses, users) {
 export function getSettlement(users, balance) {
   if (users.length !== 2) return { settled: true, message: null }
 
-  const [userA, userB] = users
+  const { userA, userB } = resolveCoupleUsers(users)
   const balA = balance[userA.id] ?? 0
   const balB = balance[userB.id] ?? 0
 

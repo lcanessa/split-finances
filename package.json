@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "import:gastos-fijos:dry": "node scripts/import-gastos-fijos.mjs --dry-run",
+    "import:gastos-fijos:sql": "node scripts/import-gastos-fijos.mjs --sql",
+    "import:gastos-fijos": "node scripts/import-gastos-fijos.mjs --execute --replace"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

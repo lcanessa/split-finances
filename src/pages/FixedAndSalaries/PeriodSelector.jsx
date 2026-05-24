@@ -15,7 +15,7 @@ const MONTHS = [
 
 function buildYearOptions() {
   const current = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, i) => current - 2 + i)
+  return Array.from({ length: current - 2019 + 2 }, (_, i) => 2020 + i)
 }
 
 export function PeriodSelector({ month, year, onMonthChange, onYearChange }) {
@@ -31,7 +31,7 @@ export function PeriodSelector({ month, year, onMonthChange, onYearChange }) {
           id="period-month"
           value={month}
           onChange={(e) => onMonthChange(Number(e.target.value))}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="sheet-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 md:text-sm"
         >
           {MONTHS.map((m) => (
             <option key={m.value} value={m.value}>
@@ -48,7 +48,7 @@ export function PeriodSelector({ month, year, onMonthChange, onYearChange }) {
           id="period-year"
           value={year}
           onChange={(e) => onYearChange(Number(e.target.value))}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="sheet-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 md:text-sm"
         >
           {years.map((y) => (
             <option key={y} value={y}>
